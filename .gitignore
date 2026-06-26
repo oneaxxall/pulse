@@ -1,0 +1,19 @@
+benchmark/vendor/
+build/
+coverage/
+dist/
+node_modules/
+.env
+benchmark/composer.lock
+config.json
+npm-debug.log
+yarn.lock
+*.db
+push
+
+# Packed Files
+bundle/
+nodes/
+pusher-x-steroids.zip
+pusher-node-modules.tar.gz
+pusher-production.tar.gz

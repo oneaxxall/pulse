@@ -1,0 +1,38 @@
+ARG VERSION=18
+
+FROM --platform=$BUILDPLATFORM node:$VERSION-bullseye as build
+
+ENV PYTHONUNBUFFERED=1
+
+COPY . /tmp/build
+
+WORKDIR /tmp/build  
+
+RUN apt-get update -y ; \
+    apt-get upgrade -y ; \
+    apt-get install -y git python3 gcc wget ; \
+    npm ci ; \
+    npm run build ; \
+    npm ci --omit=dev --ignore-scripts ; \
+    npm prune --production ; \
+    rm -rf node_modules/*/test/ node_modules/*/tests/ ; \
+    npm install -g modclean ; \
+    modclean -n default:safe --run ; \
+    mkdir -p /app ; \
+    cp -r bin/ dist/ node_modules/ package.json .env package-lock.json README.md /app/
+
+FROM --platform=$TARGETPLATFORM node:$VERSION-bullseye-slim
+
+LABEL org.opencontainers.image.authors="pds-pusher-server <ahmadwahyudin.pds@gmail.com>"
+LABEL org.opencontainers.image.source="https://gitlab.com/pds-product-development/kawani-pds-pusher-server"
+LABEL org.opencontainers.image.url="https://perantidigital.co.id"
+LABEL org.opencontainers.image.vendor="1axxall"
+LABEL org.opencontainers.image.licenses="AGPL-3.0"
+
+COPY --from=build /app /app
+
+WORKDIR /app
+
+EXPOSE 6001
+
+ENTRYPOINT ["node", "/app/bin/server.js", "start"]
