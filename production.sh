@@ -1,64 +1,64 @@
 #!/usr/bin/env bash
 #
 # production.sh
-# Membangun (build) dan memaketkan aplikasi untuk kebutuhan produksi (siap jalan).
+# Builds and packages the application for production deployment (ready to run).
 #
 
 set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 cd "$SCRIPT_DIR"
 
-OUTPUT="pusher-production.tar.gz"
+OUTPUT="pulse-production.tar.gz"
 
 echo "----------------------------------------------------------"
-echo "🚀 Menyiapkan Paket Produksi PDS Pusher Server (Bundled)"
+echo "🚀 Preparing Pulse Server Production Package (Bundled)"
 echo "----------------------------------------------------------"
 
-# 1. Jalankan Bundling
-echo "🏗️  1/3 Menjalankan bundling (esbuild)..."
+# 1. Run Bundling
+echo "🏗️  1/3 Running bundling (esbuild)..."
 npm run bundle > /dev/null
 
 if [[ ! -d "bundle" ]]; then
-    echo "❌ Folder bundle tidak ditemukan! Bundling gagal."
+    echo "❌ Bundle folder not found! Bundling failed."
     exit 1
 fi
 
-# 2. Hapus file lama jika ada
+# 2. Remove old package if exists
 rm -f "$OUTPUT"
 
-# 3. Memaketkan file yang dibutuhkan saja (Tanpa node_modules!)
-echo "📦 2/3 Memaketkan file ke $OUTPUT..."
+# 3. Package only the required files (Without node_modules!)
+echo "📦 2/3 Packaging files to $OUTPUT..."
 
-# Buat folder sementara untuk pemaketan
+# Create temporary directory for packaging
 TEMP_DIR=".production_temp"
 rm -rf "$TEMP_DIR"
 mkdir -p "$TEMP_DIR"
 
-# Salin hasil bundle
+# Copy bundle output
 cp -r bundle/* "$TEMP_DIR/"
 
-# Salin file pendukung jika ada
+# Copy supporting files if they exist
 [ -d "sdk" ] && cp -r sdk "$TEMP_DIR/"
 [ -f ".env.example" ] && cp ".env.example" "$TEMP_DIR/"
 [ -f ".env" ] && cp ".env" "$TEMP_DIR/"
 
-# Pakai tar untuk mengompres folder sementara
+# Use tar to compress the temporary folder
 tar -czf "$OUTPUT" -C "$TEMP_DIR" .
 
-# Bersihkan folder sementara
+# Clean up temporary folder
 rm -rf "$TEMP_DIR"
 
-# 4. Selesai
+# 4. Done
 if [[ -f "$OUTPUT" ]]; then
     SIZE=$(du -h "$OUTPUT" | cut -f1)
-    echo "✅ 3/3 Berhasil! File $OUTPUT siap digunakan ($SIZE)."
+    echo "✅ 3/3 Success! File $OUTPUT is ready to use ($SIZE)."
     echo "----------------------------------------------------------"
-    echo "💡 Cara Penggunaan di Server Baru:"
-    echo "   1. Copy $OUTPUT ke server tujuan."
-    echo "   2. Ekstrak: tar -xzf $OUTPUT"
-    echo "   3. Jalankan: ./run-pds-server.sh"
+    echo "💡 How to Use on a New Server:"
+    echo "   1. Copy $OUTPUT to the target server."
+    echo "   2. Extract: tar -xzf $OUTPUT"
+    echo "   3. Run: ./run-pulse-server.sh"
     echo "----------------------------------------------------------"
 else
-    echo "❌ Gagal membuat paket produksi."
+    echo "❌ Failed to create production package."
     exit 1
 fi

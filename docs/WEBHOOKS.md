@@ -1,55 +1,55 @@
-# 🪝 Dokumentasi Webhooks
+# 🪝 Webhooks Documentation
 
-Webhooks memungkinkan PDS Pusher Server untuk mengirimkan notifikasi *real-time* ke backend aplikasi Anda (Laravel/Node.js) saat terjadi aktivitas tertentu di WebSocket.
+Webhooks allow Pulse Server to send *real-time* notifications to your backend application (Laravel/Node.js) when certain WebSocket activities occur.
 
-## 1. Konfigurasi Webhook
+## 1. Webhook Configuration
 
-Webhook dikonfigurasi per-aplikasi di dalam database pada kolom `webhooks` (format JSON). 
+Webhooks are configured per-application in the database within the `webhooks` column (JSON format).
 
-### Struktur JSON Konfigurasi
+### Configuration JSON Structure
 ```json
 [
   {
-    "url": "https://api.anda.com/pusher/webhook",
+    "url": "https://api.yourservice.com/pusher/webhook",
     "event_types": ["client_event", "member_added", "member_removed"],
     "filter": {
       "channel_name_starts_with": "chat-",
       "channel_name_ends_with": "-room"
     },
     "headers": {
-      "X-Custom-Auth": "secret-token-anda"
+      "X-Custom-Auth": "your-secret-token"
     }
   }
 ]
 ```
 
-### Parameter Konfigurasi:
-- `url`: URL tujuan yang akan menerima data POST.
-- `event_types`: Daftar event yang ingin dipantau (lihat daftar di bawah).
-- `filter` (Opsional): Membatasi webhook hanya untuk channel tertentu.
-- `headers` (Opsional): Header tambahan yang ingin dikirimkan ke server Anda.
+### Configuration Parameters:
+- `url`: The target URL that will receive the POST data.
+- `event_types`: List of events to monitor (see the list below).
+- `filter` (Optional): Restrict webhooks to specific channels only.
+- `headers` (Optional): Additional headers to send to your server.
 
 ---
 
-## 2. Jenis Event yang Didukung
+## 2. Supported Event Types
 
-| Nama Event | Deskripsi |
+| Event Name | Description |
 | :--- | :--- |
-| `client_event` | Saat user mengirimkan client-event (misal: `client-typing`). |
-| `member_added` | Saat user bergabung ke Presence Channel (Online). |
-| `member_removed` | Saat user keluar dari Presence Channel (Offline). |
-| `channel_occupied` | Saat sebuah channel baru dibuat (ada orang pertama yang join). |
-| `channel_vacated` | Saat sebuah channel kosong (orang terakhir keluar). |
-| `cache_miss` | Saat request data cache tidak ditemukan. |
+| `client_event` | When a user sends a client event (e.g., `client-typing`). |
+| `member_added` | When a user joins a Presence Channel (comes Online). |
+| `member_removed` | When a user leaves a Presence Channel (goes Offline). |
+| `channel_occupied` | When a new channel is created (first person joins). |
+| `channel_vacated` | When a channel becomes empty (last person leaves). |
+| `cache_miss` | When a cache data request is not found. |
 
 ---
 
-## 3. Keamanan & Verifikasi
+## 3. Security & Verification
 
-Setiap request webhook menyertakan header **`X-Pusher-Signature`**. Anda **WAJIB** memverifikasi signature ini di sisi server Anda untuk memastikan data benar-benar berasal dari PDS Pusher.
+Every webhook request includes a **`X-Pusher-Signature`** header. You **MUST** verify this signature on your server side to ensure the data genuinely originates from Pulse Server.
 
-### Cara Verifikasi (Contoh Node.js):
-Signature adalah hasil **HMAC SHA256** dari *request body* menggunakan **App Secret** Anda sebagai key-nya.
+### Verification Method (Node.js Example):
+The signature is the result of **HMAC SHA256** of the *request body* using your **App Secret** as the key.
 
 ```javascript
 const crypto = require('crypto');
@@ -66,9 +66,9 @@ function verifyWebhook(body, receivedSignature, appSecret) {
 
 ---
 
-## 4. Format Data (Payload)
+## 4. Data Format (Payload)
 
-Data dikirimkan dalam format JSON seperti berikut:
+Data is sent in JSON format as follows:
 
 ```json
 {
@@ -85,7 +85,7 @@ Data dikirimkan dalam format JSON seperti berikut:
 
 ---
 
-## 5. Tips Implementasi
-1. **Response Cepat**: Server Anda harus merespons dengan status code `200 OK` sesegera mungkin.
-2. **Antrian (Queue)**: Sangat disarankan untuk memasukkan data webhook ke dalam *Queue* di sisi server Anda agar tidak menghambat performa Pusher jika server Anda lambat merespons.
-3. **Idempotency**: Karena jaringan internet tidak stabil, ada kemungkinan webhook terkirim dua kali. Pastikan server Anda bisa menanganinya.
+## 5. Implementation Tips
+1. **Quick Response**: Your server should respond with a `200 OK` status code as soon as possible.
+2. **Queue**: It is highly recommended to push webhook data into a *Queue* on your server side to avoid impacting Pusher's performance if your server responds slowly.
+3. **Idempotency**: Since network connections can be unstable, there is a possibility that a webhook may be delivered twice. Ensure your server can handle duplicate deliveries gracefully.

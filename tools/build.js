@@ -3,12 +3,12 @@ const { copyFileSync, mkdirSync, existsSync } = require('fs');
 const path = require('path');
 
 async function build() {
-    console.log('🚀 Memulai Advanced Bundling dengan esbuild...');
+    console.log('🚀 Starting Advanced Bundling with esbuild...');
 
     try {
-        // 1. Pastikan folder bundle bersih
+        // 1. Ensure the bundle folder is clean
         if (existsSync('bundle')) {
-            console.log('🧹 Membersihkan folder bundle lama...');
+            console.log('🧹 Cleaning up old bundle folder...');
             const files = require('fs').readdirSync('bundle');
             for (const file of files) {
                 require('fs').rmSync(path.join('bundle', file), { recursive: true, force: true });
@@ -17,7 +17,7 @@ async function build() {
             mkdirSync('bundle');
         }
 
-        // 2. Jalankan esbuild
+        // 2. Run esbuild
         await esbuild.build({
             entryPoints: ['src/cli/index.ts'],
             bundle: true,
@@ -31,7 +31,7 @@ async function build() {
             },
             external: [
                 './uws_linux_x64_127.node',
-                // Library opsional knex yang tidak kita gunakan
+                // Optional knex drivers we don't use
                 'sqlite3',
                 'better-sqlite3',
                 'tedious',
@@ -39,7 +39,7 @@ async function build() {
                 'pg-native',
                 'pg-query-stream',
                 'mysql',
-                // Library opsional pm2/blessed yang tidak krusial
+                // Optional pm2/blessed libraries that are not critical
                 'term.js',
                 'pty.js',
                 'fsevents',
@@ -47,7 +47,7 @@ async function build() {
                 'cpu-features',
                 'pm2-deploy'
             ],
-            // Mengatasi masalah dynamic require yang sering ada di library node lama
+            // Handle dynamic require commonly found in older node libraries
             mainFields: ['module', 'main'],
             define: {
                 'process.env.NODE_ENV': '"production"'
@@ -55,15 +55,15 @@ async function build() {
             logLevel: 'info',
         });
 
-        // 3. Salin binary uWS yang dibutuhkan
-        console.log('📦 Menyalin binary uWebSockets.js...');
+        // 3. Copy required uWS binary
+        console.log('📦 Copying uWebSockets.js binary...');
         copyFileSync(
             'node_modules/uWebSockets.js/uws_linux_x64_127.node',
             'bundle/uws_linux_x64_127.node'
         );
         
-        // 4. Salin file konfigurasi
-        console.log('📄 Menyalin file konfigurasi (.env)...');
+        // 4. Copy configuration files
+        console.log('📄 Copying configuration files (.env)...');
         if (existsSync('.env.example')) {
             copyFileSync('.env.example', 'bundle/.env.example');
         }
@@ -71,8 +71,8 @@ async function build() {
             copyFileSync('.env', 'bundle/.env');
         }
 
-        // 5. Salin folder configurations
-        console.log('📂 Menyalin folder configurations...');
+        // 5. Copy configurations folder
+        console.log('📂 Copying configurations folder...');
         if (!existsSync('bundle/configurations')) {
             mkdirSync('bundle/configurations');
         }
@@ -83,8 +83,8 @@ async function build() {
             copyFileSync('configurations/config.json', 'bundle/configurations/config.json');
         }
 
-        // 6. Salin folder docs
-        console.log('📂 Menyalin folder docs...');
+        // 6. Copy docs folder
+        console.log('📂 Copying docs folder...');
         if (!existsSync('bundle/docs')) {
             mkdirSync('bundle/docs');
         }
@@ -101,17 +101,17 @@ async function build() {
             copyFileSync('docs/WEBHOOKS.md', 'bundle/docs/WEBHOOKS.md');
         }
 
-        // 7. Buat script runner
-        console.log('📜 Membuat script runner (run-pds-server.sh)...');
+        // 7. Create runner script
+        console.log('📜 Creating runner script (run-pulse-server.sh)...');
         const { writeFileSync, chmodSync } = require('fs');
-        const runnerPath = path.join('bundle', 'run-pds-server.sh');
+        const runnerPath = path.join('bundle', 'run-pulse-server.sh');
         writeFileSync(runnerPath, '#!/usr/bin/env bash\nnode --no-deprecation pulse-server-js start\n');
-        chmodSync(runnerPath, '755'); // Agar bisa langsung di-execute
+        chmodSync(runnerPath, '755'); // Make it executable
 
-        console.log('✨ Build berhasil! Cek folder /bundle');
+        console.log('✨ Build successful! Check the /bundle folder');
 
     } catch (e) {
-        console.error('❌ Build gagal:', e);
+        console.error('❌ Build failed:', e);
         process.exit(1);
     }
 }
