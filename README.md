@@ -58,27 +58,22 @@ It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels
 
 ---
 
-## 🆚 Why Pulse? (vs Soketi)
+## Relationship to Soketi
 
-Pulse is a **fork of [Soketi](https://github.com/soketi/soketi)** with a focus on modernization, production readiness, and enhanced observability.
+Pulse is a **fork of [Soketi](https://github.com/soketi/soketi)** — an excellent open-source WebSocket server. This fork introduces additional features and improvements that align with specific production requirements. We are grateful to the Soketi maintainers and contributors for their foundational work.
+
+### Key Differences
 
 | Aspect | Soketi | Pulse |
 |--------|--------|-------|
-| **Node.js Support** | v14 – v18 | **v18 – v24** (latest) |
-| **Webhook Logging** | Not available | File & Database logging — daily rotated logs or MySQL/PostgreSQL tables |
-| **Production Bundling** | Requires npm install on server | esbuild zero-dependency bundle — single JS file |
-| **Environment Prefix** | SOKETI_ | **PULSE_** |
-| **AWS Lambda Webhooks** | Not available | Direct Lambda invocation as webhook target |
-| **Database Pooling** | Not available | Knex connection pooling for MySQL/PostgreSQL |
-| **Graceful Shutdown** | Basic | Configurable grace period with connection draining |
-| **Memory Monitoring** | Not available | Accept-traffic endpoint with memory threshold check |
-| **Docker Build** | Standard | Multi-stage build with modclean for minimal image size |
-| **Default Credentials** | Random-generated | Pre-configured defaults for quick start |
-| **CLI Binary Name** | soketi | **pulse** |
-| **Documentation** | English only | Full English documentation with detailed architecture |
-| **Configuration File** | Basic .env.example | Comprehensive .env.example with 20 organized sections |
-
-> **Summary:** Pulse takes everything great about Soketi and adds production-hardened features: webhook persistence for debugging, a zero-dependency bundle for easy deployment, support for modern Node.js runtimes up to v24, and extensive documentation.
+| **Node.js Support** | v14 – v18 | v18 – v24 |
+| **Webhook Logging** | Not available | File & Database (MySQL/PostgreSQL) |
+| **Production Bundling** | Requires npm install on server | esbuild single-file bundle |
+| **Environment Prefix** | `SOKETI_` | `PULSE_` |
+| **AWS Lambda Webhooks** | Not available | Supported |
+| **Database Pooling** | Not available | Knex connection pooling |
+| **Graceful Shutdown** | Basic | Configurable grace period |
+| **CLI Binary** | `soketi` | `pulse` |
 
 ---
 
@@ -470,5 +465,5 @@ AGPL-3.0 License
 ---
 
 <p align="center">
-  Made with ❤️ by <a href="https://github.com/oneaxxall">oneaxxall</a>
+  <a href="https://github.com/oneaxxall">oneaxxall</a>
 </p>
