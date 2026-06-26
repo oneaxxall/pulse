@@ -1,42 +1,42 @@
-# 🧪 Panduan Pengetesan PDS Pusher Server
+# 🧪 Pulse Server Testing Guide
 
-Dokumen ini menjelaskan cara memverifikasi bahwa server berjalan dengan benar dan cara menguji fitur-fitur utamanya.
+This document explains how to verify that the server is running correctly and how to test its main features.
 
-## 1. Cek Kesehatan Server (Health Check)
+## 1. Health Check
 
-Setelah server dijalankan (`./run-pds-server.sh`), Anda bisa mengakses endpoint berikut untuk memastikan server merespons:
+After starting the server, you can access the following endpoints to ensure the server is responding:
 
-| Endpoint | Kegunaan | Contoh URL |
+| Endpoint | Purpose | Example URL |
 | :--- | :--- | :--- |
-| `/` | Health Check dasar | `http://127.0.0.1:6001/` |
-| `/ready` | Cek kesiapan server | `http://127.0.0.1:6001/ready` |
-| `/usage` | Statistik penggunaan (JSON) | `http://127.0.0.1:9601/usage` |
-| `/users` | Daftar user/koneksi aktif | `http://127.0.0.1:9601/users` |
-| `/metrics` | Data Prometheus | `http://127.0.0.1:9601/metrics` |
+| `/` | Basic Health Check | `http://127.0.0.1:6001/` |
+| `/ready` | Server readiness check | `http://127.0.0.1:6001/ready` |
+| `/usage` | Usage statistics (JSON) | `http://127.0.0.1:9601/usage` |
+| `/users` | Active user/connection list | `http://127.0.0.1:9601/users` |
+| `/metrics` | Prometheus metrics data | `http://127.0.0.1:9601/metrics` |
 
-> **Catatan:** Secara default, endpoint statistik (`/usage` & `/metrics`) dipisahkan ke port **9600** agar tidak membebani jalur data utama.
+> **Note:** By default, statistics endpoints (`/usage` & `/metrics`) are served on a separate port **9600** to avoid congesting the main data channel.
 
 ---
 
-## 2. Pengetesan Authentikasi (App Key & Secret)
+## 2. Authentication Testing (App Key & Secret)
 
-Server ini kompatibel dengan protokol Pusher. Untuk menguji apakah **App Key** dan **App Secret** Anda valid, cara termudah adalah dengan mencoba mengirimkan event (Broadcast) menggunakan API.
+This server is compatible with the Pusher protocol. To test whether your **App Key** and **App Secret** are valid, the easiest way is to try sending an event (Broadcast) using the API.
 
-### A. Menggunakan Postman / cURL
-Endpoint untuk broadcast: `POST /apps/:app_id/events`
+### A. Using Postman / cURL
+Broadcast endpoint: `POST /apps/:app_id/events`
 
-Namun, karena Pusher menggunakan tanda tangan (signature) HMAC SHA256, mengirim manual via cURL cukup sulit. Sangat disarankan menggunakan script SDK.
+However, since Pusher uses HMAC SHA256 signature signing, sending requests manually via cURL can be challenging. Using the SDK is highly recommended.
 
-### B. Menggunakan Node.js SDK (Cara Paling Akurat)
-Anda bisa membuat file `test-broadcast.js` di luar folder server:
+### B. Using Node.js SDK (Most Accurate Method)
+Create a `test-broadcast.js` file outside the server folder:
 
 ```javascript
 const Pusher = require('pusher');
 
 const pusher = new Pusher({
-  appId: "1",             // Sesuai id di database
-  key: "pds-key",         // Sesuai key di database
-  secret: "pds-secret",   // Sesuai secret di database
+  appId: "1",             // Match the ID in the database
+  key: "app-key",         // Match the key in the database
+  secret: "app-secret",   // Match the secret in the database
   host: "127.0.0.1",
   port: "6001",
   useTLS: false,
@@ -44,22 +44,22 @@ const pusher = new Pusher({
 });
 
 pusher.trigger("my-channel", "my-event", {
-  message: "Halo dari PDS Pusher!"
+  message: "Hello from Pulse!"
 }).then(response => {
-  console.log("✅ Berhasil Broadcast:", response);
+  console.log("✅ Broadcast Successful:", response);
 }).catch(err => {
-  console.error("❌ Gagal:", err);
+  console.error("❌ Failed:", err);
 });
 ```
 
 ---
 
-## 3. Pengetesan WebSocket (Frontend)
+## 3. WebSocket Testing (Frontend)
 
-Untuk menguji apakah client bisa terhubung, Anda bisa menggunakan alat seperti **"Smart Websocket Client"** (extension Chrome) atau script sederhana:
+To test whether a client can connect, you can use tools like **"Smart Websocket Client"** (Chrome extension) or a simple script:
 
-1. Connect ke: `ws://127.0.0.1:6001/app/pds-key`
-2. Jika berhasil, Anda akan menerima pesan:
+1. Connect to: `ws://127.0.0.1:6001/app/app-key`
+2. If successful, you will receive a message:
    ```json
    {
      "event": "pusher:connection_established",
@@ -71,13 +71,13 @@ Untuk menguji apakah client bisa terhubung, Anda bisa menggunakan alat seperti *
 
 ## 4. Monitoring & Metrics
 
-Jika Anda mengaktifkan metrics di `.env` (`PDSPUSHER_METRICS_ENABLED=1`), Anda bisa melihat data untuk Prometheus di:
+If you have enabled metrics in `.env` (`PULSE_METRICS_ENABLED=true`), you can view Prometheus data at:
 - `http://127.0.0.1:9600/metrics`
 
 ---
 
-## 5. Troubleshooting (Masalah Umum)
+## 5. Troubleshooting (Common Issues)
 
-- **Connection Refused**: Pastikan IP Bind di `.env` sudah benar (`0.0.0.0` untuk akses publik).
-- **Auth Error (401)**: Periksa kembali apakah `App Secret` di database sudah cocok dengan yang digunakan di Client.
-- **Wrong Sequence**: Pastikan server sudah menggunakan `mysql2` (sudah kita perbaiki di versi bundle terbaru).
+- **Connection Refused**: Make sure the IP Bind in `.env` is correct (`0.0.0.0` for public access).
+- **Auth Error (401)**: Double-check that the `App Secret` in the database matches the one used by the Client.
+- **Wrong Sequence**: Ensure the server is using `mysql2` (fixed in the latest bundle version).

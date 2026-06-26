@@ -1,96 +1,96 @@
-# 🛠️ PDS Pusher Server: Documentation & Internal Mechanisms
+# 🛠️ Pulse Server: Documentation & Internal Mechanisms
 
 ## 🌟 Overview
-**pds-pusher-server** adalah server WebSocket performa tinggi yang dirancang khusus untuk kompatibilitas penuh dengan protokol **Pusher**. Dibangun di atas **uWebSockets.js** (engine C++ yang sangat cepat untuk Node.js), server ini berfungsi sebagai pengganti mandiri (*drop-in replacement*) untuk layanan Pusher.com atau Laravel Reverb.
+**Pulse** is a high-performance WebSocket server designed for full compatibility with the **Pusher** protocol. Built on top of **uWebSockets.js** (a very fast C++ engine for Node.js), this server acts as a self-hosted *drop-in replacement* for Pusher.com or Laravel Reverb.
 
-Server ini bertindak sebagai perantara real-time antara aplikasi backend (misalnya Laravel) dan aplikasi frontend (Vue, React, Mobile), memungkinkan pengiriman data instan tanpa perlu polling manual.
-
----
-
-## 🏗️ Arsitektur Sistem
-
-### 1. Titik Masuk (Entry Points)
-Server menangani dua jenis traffic secara bersamaan:
-- **WebSocket (WS)**: Menangani koneksi persisten dari klien (frontend). Digunakan untuk langganan channel dan menerima event.
-- **HTTP REST API**: Menangani permintaan dari backend (server-to-server). Digunakan untuk memicu event, mengecek status channel, dan manajemen user.
-
-### 2. Komponen Utama
-- **Server Engine (`server.ts`)**: Menginisiasi uWS App, menangani SSL, dan mengelola lifecycle koneksi.
-- **WebSocket Handler (`ws-handler.ts`)**: Otak di balik komunikasi real-time. Menangani handshake Pusher, ping/pong, serta logika join/leave channel.
-- **HTTP Handler (`http-handler.ts`)**: Implementasi API Pusher. Memproses permintaan POST dari backend dan memvalidasi tanda tangan HMAC.
-- **Adapter Driver (`adapters/`)**: Lapisan abstraksi penyimpanan status.
-    - **Local**: Menyimpan data koneksi di memori lokal (RAM).
-    - **Redis**: Menggunakan Redis Pub/Sub untuk sinkronisasi antar beberapa node server (Horizontal Scaling).
-- **App Manager (`app-managers/`)**: Mengelola kredensial aplikasi (`app-id`, `app-key`, `app-secret`) yang bisa disimpan di file (Array) atau Database (MySQL/PostgreSQL).
+The server acts as a real-time intermediary between backend applications (e.g., Laravel) and frontend applications (Vue, React, Mobile), enabling instant data delivery without manual polling.
 
 ---
 
-## 🚀 Cara Kerja (Internal Logic)
+## 🏗️ System Architecture
 
-### Alur Koneksi Client
-1. **Handshake**: Client melakukan koneksi ke `/app/:appKey`. Server memvalidasi App Key.
-2. **Established**: Jika valid, server mengirim event `pusher:connection_established` beserta `socket_id`.
-3. **Subscription**: Client mengirim `pusher:subscribe`.
-    - Untuk **Public Channel**, server langsung memasukkan socket ke channel tersebut.
-    - Untuk **Private/Presence Channel**, server memvalidasi tanda tangan `auth` yang dikirim client.
-4. **Broadcast**: Jika ada pesan masuk untuk channel tersebut, server mencari semua socket yang terdaftar di channel tersebut (lewat Adapter) dan mengirimkan datanya.
+### 1. Entry Points
+The server handles two types of traffic simultaneously:
+- **WebSocket (WS)**: Manages persistent connections from clients (frontend). Used for channel subscriptions and receiving events.
+- **HTTP REST API**: Handles requests from backend (server-to-server). Used for triggering events, checking channel status, and user management.
 
-### Alur Trigger Event (Backend-to-Frontend)
-1. Backend mengirim POST request ke `/apps/:appId/events`.
-2. `HttpHandler` memvalidasi `auth_signature` menggunakan `app-secret`.
-3. Server memproses payload dan mengirimkan data tersebut ke semua client yang berlangganan channel terkait melalui WebSocket.
+### 2. Core Components
+- **Server Engine (`server.ts`)**: Initializes the uWS App, handles SSL, and manages the connection lifecycle.
+- **WebSocket Handler (`ws-handler.ts`)**: The brain behind real-time communication. Handles Pusher handshake, ping/pong, and join/leave channel logic.
+- **HTTP Handler (`http-handler.ts`)**: Pusher API implementation. Processes POST requests from the backend and validates HMAC signatures.
+- **Adapter Driver (`adapters/`)**: State storage abstraction layer.
+    - **Local**: Stores connection data in local memory (RAM).
+    - **Redis**: Uses Redis Pub/Sub for synchronization across multiple server nodes (Horizontal Scaling).
+- **App Manager (`app-managers/`)**: Manages application credentials (`app-id`, `app-key`, `app-secret`) stored in a file (Array) or Database (MySQL/PostgreSQL).
 
 ---
 
-## 🔧 Konfigurasi
+## 🚀 How It Works (Internal Logic)
 
-### File `.env`
-Konfigurasi utama dilakukan melalui file `.env`.
+### Client Connection Flow
+1. **Handshake**: Client connects to `/app/:appKey`. The server validates the App Key.
+2. **Established**: If valid, the server sends a `pusher:connection_established` event along with a `socket_id`.
+3. **Subscription**: Client sends `pusher:subscribe`.
+    - For **Public Channels**, the server immediately adds the socket to the channel.
+    - For **Private/Presence Channels**, the server validates the `auth` signature sent by the client.
+4. **Broadcast**: When a message arrives for a channel, the server looks up all sockets registered on that channel (via the Adapter) and delivers the data.
+
+### Event Trigger Flow (Backend-to-Frontend)
+1. Backend sends a POST request to `/apps/:appId/events`.
+2. `HttpHandler` validates the `auth_signature` using the `app-secret`.
+3. The server processes the payload and delivers the data to all clients subscribed to the relevant channel via WebSocket.
+
+---
+
+## 🔧 Configuration
+
+### `.env` File
+Main configuration is done through the `.env` file.
 ```env
-# Debug Mode (Tampilkan log detail di terminal)
-PDSPUSHER_DEBUG=1
+# Debug Mode (Show detailed logs in terminal)
+PULSE_DEBUG=1
 
-# Port Server
-PORT=6001
+# Server Port
+PULSE_PORT=6001
 
-# Driver Management Aplikasi (array | mysql | postgres)
-PDSPUSHER_MANAGER_DRIVER=mysql
-PDSPUSHER_DB_MYSQL_DATABASE=pds_pusher_db
+# App Management Driver (array | mysql | postgres)
+PULSE_MANAGER_DRIVER=mysql
+PULSE_DB_MYSQL_DATABASE=pulse_db
 
-# Driver Penyimpanan Koneksi (local | redis)
-PDSPUSHER_ADAPTER_DRIVER=local
+# Connection Storage Driver (local | redis)
+PULSE_ADAPTER_DRIVER=local
 ```
 
-### Database Schema (Jika menggunakan driver MySQL)
-Server mengharapkan tabel (misalnya `pusher_manager`) dengan kolom:
+### Database Schema (When using MySQL driver)
+The server expects a table (e.g., `pulse_manager`) with the following columns:
 - `id`: App ID
 - `key`: App Key
 - `secret`: App Secret
-- `max_connections`: Batas maksimal koneksi simultan.
+- `max_connections`: Maximum simultaneous connections limit.
 
 ---
 
-## 📡 Fitur Lanjutan
+## 📡 Advanced Features
 
 ### 1. Webhooks
-Server dapat mengirim notifikasi balik ke backend Anda saat terjadi event tertentu:
-- `channel_occupied`: Channel pertama kali dibuat (ada user join).
-- `channel_vacated`: Channel kosong (user terakhir leave).
-- `member_added` & `member_removed`: Khusus Presence Channel.
-- `client_event`: Saat client mengirim data langsung melalui WebSocket (`client-*`).
+The server can send callback notifications to your backend when certain events occur:
+- `channel_occupied`: A channel is first created (a user joins).
+- `channel_vacated`: A channel becomes empty (last user leaves).
+- `member_added` & `member_removed`: Presence channel specific.
+- `client_event`: When a client sends data directly via WebSocket (`client-*`).
 
 ### 2. Metrics & Monitoring
-Endpoint `/metrics` (Prometheus compatible) menyediakan data:
-- Jumlah koneksi aktif.
-- Total pesan yang dikirim/diterima.
-- Penggunaan memori (RSS, Heap).
+The `/metrics` endpoint (Prometheus compatible) provides:
+- Active connection count.
+- Total messages sent/received.
+- Memory usage (RSS, Heap).
 
 ---
 
-## 📖 Panduan Penggunaan
+## 📖 Usage Guide
 
-### Integrasi Backend (Laravel)
-Ubah file `.env` di proyek Laravel Anda:
+### Backend Integration (Laravel)
+Update the `.env` file in your Laravel project:
 ```env
 BROADCAST_DRIVER=pusher
 
@@ -102,7 +102,7 @@ PUSHER_PORT=6001
 PUSHER_SCHEME=http
 ```
 
-### Integrasi Frontend (Laravel Echo)
+### Frontend Integration (Laravel Echo)
 ```javascript
 import Echo from 'laravel-echo';
 window.Pusher = require('pusher-js');
@@ -120,20 +120,20 @@ window.Echo = new Echo({
 
 ---
 
-## 🛡️ Keamanan (Security)
-- **HMAC Authentication**: Setiap request dari backend wajib menyertakan tanda tangan digital yang dikalkulasi dengan `app-secret`.
-- **Private Channels**: Memastikan user hanya bisa mendengarkan channel yang diizinkan oleh sistem backend melalui proses autentikasi.
-- **Rate Limiting**: Melindungi server dari serangan brute-force atau spamming event dari sisi client.
+## 🛡️ Security
+- **HMAC Authentication**: Every request from the backend must include a digital signature computed with the `app-secret`.
+- **Private Channels**: Ensures users can only listen to channels authorized by the backend system through an authentication process.
+- **Rate Limiting**: Protects the server from brute-force attacks or event spamming from the client side.
 
 ---
 
-## 📈 Tips Produksi
-1. **Reverse Proxy**: Gunakan Nginx sebagai reverse proxy untuk menangani terminasi SSL (WSS).
-2. **Process Manager**: Gunakan **PM2** untuk menjaga server tetap hidup jika terjadi crash.
+## 📈 Production Tips
+1. **Reverse Proxy**: Use Nginx as a reverse proxy to handle SSL termination (WSS).
+2. **Process Manager**: Use **PM2** to keep the server alive in case of crashes.
    ```bash
    pm2 start ecosystem.config.js
    ```
-3. **Scaling**: Jika traffic sangat tinggi, gunakan driver **Redis** dan jalankan beberapa instance server di belakang Load Balancer.
+3. **Scaling**: For high traffic, use the **Redis** driver and run multiple server instances behind a Load Balancer.
 
 ---
-*Dokumentasi ini dibuat untuk memberikan pemahaman menyeluruh tentang cara kerja internal PDS Pusher Server. Dibuat dengan ❤️ oleh Tim PDS.*
+*This documentation was created to provide a comprehensive understanding of Pulse Server's internal workings. Made with ❤️ by the Pulse Team.*

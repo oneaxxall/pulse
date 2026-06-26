@@ -1,79 +1,79 @@
-# 🛠️ Development Guide: PDS Pusher Server
+# 🛠️ Development Guide: Pulse Server
 
-Panduan ini ditujukan bagi pengembang yang ingin berkontribusi atau melakukan modifikasi pada kode sumber **PDS Pusher Server**.
+This guide is intended for developers who want to contribute to or modify the **Pulse Server** source code.
 
 ---
 
-## 🛠️ 1. Persiapan Lingkungan
+## 🛠️ 1. Environment Setup
 
-Pastikan Anda memiliki:
-- **Node.js**: Versi 22.x (Direkomendasikan).
-- **TypeScript**: Terinstal secara global atau via dependensi.
+Make sure you have:
+- **Node.js**: Version 22.x (Recommended).
+- **TypeScript**: Installed globally or via project dependencies.
 
-Instalasi dependensi:
+Install dependencies:
 ```bash
 npm install
 ```
 
 ---
 
-## 🚀 2. Menjalankan Server (Development)
+## 🚀 2. Running the Server (Development)
 
-Untuk pengembangan sehari-hari, gunakan fitur **Live Reload** agar server otomatis restart setiap kali Anda menyimpan perubahan pada file `.ts`.
+For daily development, use the **Live Reload** feature so the server automatically restarts whenever you save changes to `.ts` files.
 
 ```bash
 npm run dev
 ```
 
-Ini menggunakan `ts-node-dev` yang sangat cepat karena hanya melakukan transpilasi tanpa pengecekan tipe data penuh di setiap restart.
+This uses `ts-node-dev`, which is very fast because it only transpiles without performing full type checking on every restart.
 
 ---
 
-## 🏗️ 3. Proses Build
+## 🏗️ 3. Build Process
 
-Jika Anda ingin melakukan pengecekan tipe data secara menyeluruh dan menghasilkan file JavaScript:
+If you want to perform thorough type checking and generate JavaScript files:
 
 ```bash
-# Build satu kali
+# Single build
 npm run build
 
-# Build dengan mode pemantauan (watch mode)
+# Build with watch mode
 npm run build:watch
 ```
 
 ---
 
-## 📦 4. Bundling Manual
+## 📦 4. Manual Bundling
 
-Jika Anda ingin mengetes proses bundling sebelum deployment:
+If you want to test the bundling process before deployment:
 
 ```bash
 npm run bundle
 ```
-Hasil bundle akan muncul di folder `/bundle`.
+The bundle output will appear in the `/bundle` folder.
 
 ---
 
 ## 🧪 5. Testing
 
-Aplikasi ini menggunakan Jest untuk pengujian:
+This application uses Jest for testing:
 
 ```bash
-# Menjalankan semua test
+# Run all tests
 npm test
 
-# Menjalankan test dalam mode verbose
+# Run tests in verbose mode
 npm run test:local
 ```
 
 ---
 
-## 📝 Alur Pengembangan
-1. Buat branch baru untuk fitur/bugfix.
-2. Lakukan perubahan pada folder `src/`.
-3. Gunakan `npm run dev` untuk verifikasi instan.
-4. Pastikan `npm test` lulus sebelum melakukan commit.
-5. Push perubahan Anda.
+## 📝 Development Workflow
+1. Create a new branch for your feature/bugfix.
+2. Make changes in the `src/` folder.
+3. Use `npm run dev` for instant verification.
+4. Make sure `npm test` passes before committing.
+5. Push your changes.
 
 ---
-*Dibuat oleh Tim PDS - 2026*
+*Created by Pulse Team - 2026*

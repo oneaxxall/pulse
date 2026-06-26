@@ -25,7 +25,7 @@ async function build() {
             keepNames: true,
             platform: 'node',
             target: 'node22',
-            outfile: 'bundle/pusher-server-js',
+            outfile: 'bundle/pulse-server-js',
             alias: {
                 'uWebSockets.js': './src/lib/uws.js'
             },
@@ -105,7 +105,7 @@ async function build() {
         console.log('📜 Membuat script runner (run-pds-server.sh)...');
         const { writeFileSync, chmodSync } = require('fs');
         const runnerPath = path.join('bundle', 'run-pds-server.sh');
-        writeFileSync(runnerPath, '#!/usr/bin/env bash\nnode --no-deprecation pusher-server-js start\n');
+        writeFileSync(runnerPath, '#!/usr/bin/env bash\nnode --no-deprecation pulse-server-js start\n');
         chmodSync(runnerPath, '755'); // Agar bisa langsung di-execute
 
         console.log('✨ Build berhasil! Cek folder /bundle');

@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS `pds-pusher-manager` (
+CREATE TABLE IF NOT EXISTS `pulse_manager` (
     `id` varchar(255) NOT NULL,
     `key` varchar(255) NOT NULL,
     `secret` varchar(255) NOT NULL,
@@ -20,3 +20,23 @@ CREATE TABLE IF NOT EXISTS `pds-pusher-manager` (
     PRIMARY KEY (`id`)
 );
 
+-- Tabel untuk pencatatan log pengiriman webhook
+-- Diisi otomatis oleh WebhookLogger jika PULSE_WEBHOOKS_LOGS_ENABLED=true
+-- dan PULSE_WEBHOOKS_LOGS_DB_ENABLED=true
+CREATE TABLE IF NOT EXISTS `pulse_webhook_logs` (
+    `id`              bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+    `app_key`         varchar(255) NOT NULL COMMENT 'App key yang mengirim webhook',
+    `webhook_url`     text NOT NULL COMMENT 'URL tujuan webhook',
+    `status`          enum('success','failed') NOT NULL COMMENT 'Status pengiriman',
+    `event_types`     json NOT NULL COMMENT 'Daftar event type yang dikirim',
+    `payload_size`    int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Ukuran payload dalam bytes',
+    `response_status` smallint(5) UNSIGNED NULL DEFAULT NULL COMMENT 'HTTP response code dari target',
+    `duration_ms`     int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Durasi pengiriman dalam milidetik',
+    `error`           text NULL DEFAULT NULL COMMENT 'Pesan error jika gagal',
+    `created_at`      datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Waktu pencatatan',
+    PRIMARY KEY (`id`),
+    INDEX `idx_app_key` (`app_key`),
+    INDEX `idx_status` (`status`),
+    INDEX `idx_created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Log pengiriman webhook oleh Pulse Pusher Server';
