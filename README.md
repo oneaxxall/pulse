@@ -1,10 +1,11 @@
 # Pulse — Self-Hosted Pusher-Compatible WebSocket Server
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
-[![Node Version](https://img.shields.io/badge/node-14%20-%2018-brightgreen)](https://nodejs.org)
+[![Node Version](https://img.shields.io/badge/node-18%20-%2024-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/%3C%2F%3E-TypeScript-3178C6)](https://www.typescriptlang.org/)
+[![Bundle](https://img.shields.io/badge/bundle-esbuild-FFCF00)](https://esbuild.github.io/)
 
-**Pulse** is a high-performance, self-hosted WebSocket server that implements the **Pusher protocol** for real-time bidirectional messaging. It is a **fork of [Soketi](https://github.com/soketi/soketi)** with additional enhancements and modifications. Built on top of [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js) — a C++-compiled WebSocket and HTTP library — Pulse delivers exceptional performance with minimal resource overhead.
+**Pulse** is a high-performance, self-hosted WebSocket server that implements the **Pusher protocol** for real-time bidirectional messaging. It is a **fork of [Soketi](https://github.com/soketi/soketi)** with significant enhancements, modernized dependencies, and production-ready features built on top of [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js) — a C++-compiled WebSocket and HTTP library.
 
 It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels, allowing you to run your own real-time infrastructure behind your firewall, on your own hardware, or in any cloud environment.
 
@@ -14,13 +15,15 @@ It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels
 
 - **Pusher Protocol Compatible** — Works seamlessly with Pusher JS SDK, Laravel Echo, and Pusher backend SDKs (PHP, Node.js, Python, etc.)
 - **High Performance** — Powered by uWebSockets.js, a C++-native engine capable of tens of thousands of concurrent connections
+- **Node.js v18 – v24 Support** — Fully compatible with the latest Node.js runtimes up to version 24
 - **Channel Types** — Public, Private, Encrypted Private, and Presence channels
 - **Client Events** — Enable client-to-client messaging on private channels
 - **Horizontal Scaling** — Multiple adapters: Local, Redis, NATS, Cluster
 - **Rate Limiting** — Granular rate limiting for backend events, client events, and read requests
 - **Webhooks** — HTTP webhook notifications with optional AWS Lambda support
-- **Webhook Logging** — Persist deliveries to files or database
-- **Prometheus Metrics** — Expose real-time server metrics
+- **Webhook Logger** — Persist webhook deliveries to daily log files (webhook-YYYY-MM-DD.log) or database (MySQL/PostgreSQL)
+- **Production-Ready Bundling** — Single-file bundle via esbuild for zero-dependency deployment
+- **Prometheus Metrics** — Expose real-time server metrics on a dedicated HTTP endpoint
 - **Queue System** — Async event processing via sync or Redis (BullMQ)
 - **Multi-App Support** — Serve multiple applications with isolated credentials
 - **Graceful Shutdown** — Drain active connections before terminating
@@ -33,6 +36,7 @@ It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels
 
 ## 📋 Table of Contents
 
+- [Why Pulse? (vs Soketi)](#why-pulse-vs-soketi)
 - [Requirements](#requirements)
 - [Architecture Overview](#architecture-overview)
 - [Installation](#installation)
@@ -40,6 +44,8 @@ It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels
 - [Usage](#usage)
 - [Channel Types](#channel-types)
 - [Horizontal Scaling](#horizontal-scaling)
+- [Webhook Logger](#webhook-logger)
+- [Production Bundling](#production-bundling)
 - [Monitoring & Metrics](#monitoring--metrics)
 - [API Endpoints](#api-endpoints)
 - [Webhooks](#webhooks)
@@ -52,18 +58,42 @@ It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels
 
 ---
 
+## 🆚 Why Pulse? (vs Soketi)
+
+Pulse is a **fork of [Soketi](https://github.com/soketi/soketi)** with a focus on modernization, production readiness, and enhanced observability.
+
+| Aspect | Soketi | Pulse |
+|--------|--------|-------|
+| **Node.js Support** | v14 – v18 | **v18 – v24** (latest) |
+| **Webhook Logging** | Not available | File & Database logging — daily rotated logs or MySQL/PostgreSQL tables |
+| **Production Bundling** | Requires npm install on server | esbuild zero-dependency bundle — single JS file |
+| **Environment Prefix** | SOKETI_ | **PULSE_** |
+| **AWS Lambda Webhooks** | Not available | Direct Lambda invocation as webhook target |
+| **Database Pooling** | Not available | Knex connection pooling for MySQL/PostgreSQL |
+| **Graceful Shutdown** | Basic | Configurable grace period with connection draining |
+| **Memory Monitoring** | Not available | Accept-traffic endpoint with memory threshold check |
+| **Docker Build** | Standard | Multi-stage build with modclean for minimal image size |
+| **Default Credentials** | Random-generated | Pre-configured defaults for quick start |
+| **CLI Binary Name** | soketi | **pulse** |
+| **Documentation** | English only | Full English documentation with detailed architecture |
+| **Configuration File** | Basic .env.example | Comprehensive .env.example with 20 organized sections |
+
+> **Summary:** Pulse takes everything great about Soketi and adds production-hardened features: webhook persistence for debugging, a zero-dependency bundle for easy deployment, support for modern Node.js runtimes up to v24, and extensive documentation.
+
+---
+
 ## 📦 Requirements
 
 | Dependency | Version |
 |------------|---------|
-| [Node.js](https://nodejs.org) | v14 – v18 |
-| [npm](https://www.npmjs.com/) | v6+ |
+| [Node.js](https://nodejs.org) | v18 – **v24** |
+| [npm](https://www.npmjs.com/) | v8+ |
 | Memory | Minimum 256 MB (recommended: 1 GB+) |
 
 **Optional:**
 - [Redis](https://redis.io/) — For Redis adapter, rate limiter, cache, and queue
 - [NATS](https://nats.io/) — For NATS adapter
-- [MySQL](https://www.mysql.com/) / [PostgreSQL](https://www.postgresql.org/) — For database-backed app managers
+- [MySQL](https://www.mysql.com/) / [PostgreSQL](https://www.postgresql.org/) — For database-backed app managers and webhook logging
 - [Docker](https://www.docker.com/) — Containerized deployment
 - [PM2](https://pm2.keymetrics.io/) — Production process management
 
@@ -99,6 +129,14 @@ It provides a drop-in replacement for [Pusher.com](https://pusher.com/) Channels
 │  │  ┌───────┐  ┌───────┐  ┌──────────┐                  │    │
 │  │  │ Array │  │ MySQL │  │PostgreSQL│                  │    │
 │  │  └───────┘  └───────┘  └──────────┘                  │    │
+│  └───────────────────────────────────────────────────────┘    │
+│                                                               │
+│  ┌───────────────────────────────────────────────────────┐    │
+│  │         Webhook Logger Layer                            │    │
+│  │  ┌──────────────┐  ┌──────────────────┐               │    │
+│  │  │  File Logger  │  │  Database Logger  │             │    │
+│  │  │ (Daily Rotate)│  │ (MySQL/Postgres) │              │    │
+│  │  └──────────────┘  └──────────────────┘               │    │
 │  └───────────────────────────────────────────────────────┘    │
 └──────────────────────────────────────────────────────────────┘
 ```
@@ -142,6 +180,14 @@ docker-compose up -d
 pm2 start pulse -- start
 ```
 
+### Production Bundle (Zero-Dependency)
+
+```bash
+./production.sh
+# Creates pulse-production.tar.gz (~35MB)
+# Contains a single bundled JS file — no npm install needed on target server!
+```
+
 ---
 
 ## ⚙️ Configuration
@@ -168,6 +214,8 @@ Configuration methods (in order of precedence):
 | `PULSE_ADAPTER_DRIVER` | `local` | Adapter driver |
 | `PULSE_PORT` | `6001` | Server port |
 | `PULSE_MANAGER_DRIVER` | `array` | App manager driver |
+| `PULSE_WEBHOOKS_LOGS_ENABLED` | `false` | Enable webhook logging to files |
+| `PULSE_WEBHOOKS_LOGS_DB_ENABLED` | `false` | Enable webhook logging to database |
 
 ---
 
@@ -250,9 +298,58 @@ curl -X POST http://your-server.com:6001/apps/app-id/events \
 
 ---
 
+## 📝 Webhook Logger
+
+Pulse includes a built-in **Webhook Logger** that persists all webhook deliveries for auditing, debugging, and compliance.
+
+### File Logging
+
+```bash
+PULSE_WEBHOOKS_LOGS_ENABLED=true
+PULSE_WEBHOOKS_LOGS_DIR=logs
+```
+
+Log files are rotated daily: `webhook-YYYY-MM-DD.log`
+
+### Database Logging
+
+```bash
+PULSE_WEBHOOKS_LOGS_DB_ENABLED=true
+```
+
+> Note: Database logging works with mysql/postgres manager driver. Run the SQL schema from `configurations/pds-pusher-manager.sql`.
+
+---
+
+## 📦 Production Bundling
+
+Pulse uses **esbuild** to compile the entire application into a single JavaScript file.
+
+| Feature | Traditional | Pulse Bundled |
+|---------|-------------|---------------|
+| npm install on server | Required | **Not needed** |
+| Deployment size | ~200MB+ | **~35MB** (compressed) |
+| Startup time | Slow | **Instant** |
+| Dependency conflicts | Possible | **Eliminated** |
+| File count | Thousands | **Single JS file** |
+
+```bash
+./production.sh
+# Output: pulse-production.tar.gz (~35MB)
+```
+
+### Deploy
+
+```bash
+tar -xzf pulse-production.tar.gz
+./run-pulse-server.sh
+```
+
+---
+
 ## 📊 Monitoring
 
-Pulse exposes Prometheus metrics on port `9601`:
+Pulse exposes Prometheus-compatible metrics on port `9601`:
 
 ```bash
 PULSE_METRICS_ENABLED=true
@@ -285,7 +382,7 @@ Events: `client_event`, `channel_occupied`, `channel_vacated`, `member_added`, `
 
 | Limiter | Scope | Default |
 |---------|-------|---------|
-| Backend events | POST `/events` | Unlimited (-1) |
+| Backend events | POST /events | Unlimited (-1) |
 | Client events | Per socket | Unlimited (-1) |
 | Read requests | Read APIs | Unlimited (-1) |
 
@@ -310,11 +407,15 @@ pulse/
 │   ├── queues/           # Sync, Redis queue drivers
 │   ├── rate-limiters/    # Local, Redis, cluster
 │   ├── types/            # TypeScript definitions
+│   ├── webhook-log-adapters/ # File & DB webhook log storage
 │   ├── server.ts         # Core server
 │   ├── ws-handler.ts     # WebSocket handler
 │   ├── http-handler.ts   # REST API handler
-│   └── ...               # Other modules
+│   └── webhook-logger.ts # Webhook logging system
+├── tools/
+│   └── build.js          # esbuild bundling script
 ├── main.ts               # Entry point
+├── production.sh         # Production bundling script
 ├── package.json
 ├── tsconfig.json
 ├── Dockerfile
@@ -353,7 +454,7 @@ npm run bundle     # Production bundle
 
 ---
 
-## � Acknowledgements
+## 🙏 Acknowledgements
 
 - [Soketi](https://github.com/soketi/soketi) — The original project that Pulse is forked from
 - [Pusher.com](https://pusher.com/) — For the protocol specification and inspiration
@@ -362,7 +463,7 @@ npm run bundle     # Production bundle
 
 ---
 
-## �📄 License
+## 📄 License
 
 AGPL-3.0 License
 
